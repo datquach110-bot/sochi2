@@ -630,7 +630,7 @@
   window.addEventListener('pageshow', () => setTimeout(checkAwaiting, 400));
 
   // ================= Máy quét QR =================
-  let stream = null, raf = 0, lastMiss = 0;
+  let stream = null, raf = 0, lastMiss = 0, lastScan = 0;
   const canvas = document.createElement('canvas');
   const ctx2d = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -642,11 +642,11 @@
       msg.textContent = 'Máy không mở được camera ở đây. Hãy chọn ảnh có mã QR.'; return;
     }
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false });
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false });
       if (sc.hidden) { stopStream(); return; }
       const v = $('#scan-video'); v.srcObject = stream; await v.play();
       msg.textContent = 'Đưa mã QR vào trong khung';
-      tick();
+      lastScan = 0; raf = requestAnimationFrame(tick);
     } catch (e) {
       msg.textContent = e && e.name === 'NotAllowedError'
         ? 'Sổ Chi chưa được dùng camera. Cho phép trong Cài đặt iPhone, hoặc chọn ảnh có mã QR.'
@@ -660,18 +660,36 @@
   }
   function closeScanner() { stopStream(); $('#scanner').hidden = true; }
 
-  function tick() {
-    const v = $('#scan-video');
+  function tick(now) {
     if (!stream) return;
-    if (v.readyState === v.HAVE_ENOUGH_DATA && v.videoWidth) {
-      const scale = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight));
-      canvas.width = Math.round(v.videoWidth * scale); canvas.height = Math.round(v.videoHeight * scale);
-      ctx2d.drawImage(v, 0, 0, canvas.width, canvas.height);
-      const img = ctx2d.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-      if (code && code.data && handleCode(code.data, true)) return;
-    }
     raf = requestAnimationFrame(tick);
+    // Quét khoảng 5 lần/giây là đủ nhanh, đỡ tốn máy hơn quét mọi khung hình
+    if (now - lastScan < 200) return;
+    lastScan = now;
+    const v = $('#scan-video');
+    if (v.readyState !== v.HAVE_ENOUGH_DATA || !v.videoWidth) return;
+    const vw = v.videoWidth, vh = v.videoHeight;
+
+    // Ưu tiên cắt đúng vùng vuông ở giữa, trùng khung ngắm trên màn hình.
+    // Mã QR chiếm hết vùng cắt nên còn nhiều điểm ảnh hơn, đọc được cả mã dày ô.
+    const side = Math.min(vw, vh) * 0.85;
+    const sx = (vw - side) / 2, sy = (vh - side) / 2;
+    const outSide = Math.min(1000, Math.round(side));
+    canvas.width = outSide; canvas.height = outSide;
+    ctx2d.drawImage(v, sx, sy, side, side, 0, 0, outSide, outSide);
+    let img = ctx2d.getImageData(0, 0, outSide, outSide);
+    let code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+
+    if (!code) {
+      // Phòng khi mã nằm lệch ra ngoài khung ngắm: quét thêm cả khung hình đầy đủ
+      const scale = Math.min(1, 900 / Math.max(vw, vh));
+      const fw = Math.round(vw * scale), fh = Math.round(vh * scale);
+      canvas.width = fw; canvas.height = fh;
+      ctx2d.drawImage(v, 0, 0, fw, fh);
+      img = ctx2d.getImageData(0, 0, fw, fh);
+      code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+    }
+    if (code && code.data && handleCode(code.data, true)) { cancelAnimationFrame(raf); }
   }
 
   function handleCode(text, live) {
