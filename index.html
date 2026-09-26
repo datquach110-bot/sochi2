@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sổ Chi</title>
+  <meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0E1411" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Sổ Chi">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <div id="view-home" class="view"></div>
+    <div id="view-list" class="view" hidden></div>
+    <div id="view-settings" class="view" hidden></div>
+  </main>
+
+  <nav class="tabbar" aria-label="Điều hướng chính">
+    <button class="tab" data-view="home" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Tổng quan
+    </button>
+    <button class="tab" data-view="list">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+      Giao dịch
+    </button>
+    <button class="scan-btn" id="scan-open" aria-label="Quét mã QR để thanh toán">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></svg>
+    </button>
+    <button class="tab" id="manual-open">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Thêm tay
+    </button>
+    <button class="tab" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Cài đặt
+    </button>
+  </nav>
+
+  <div class="scanner" id="scanner" role="dialog" aria-modal="true" aria-label="Quét mã QR" hidden>
+    <video id="scan-video" playsinline muted autoplay></video>
+    <div class="scan-frame" aria-hidden="true"></div>
+    <div class="scan-top">
+      <strong>Quét mã QR thanh toán</strong>
+      <button class="close" id="scan-close" aria-label="Đóng máy quét">✕</button>
+    </div>
+    <p class="scan-msg" id="scan-msg" aria-live="polite">Đang mở camera…</p>
+    <div class="scan-bottom">
+      <label class="btn" for="scan-file">Chọn ảnh có mã</label>
+      <button class="btn" id="scan-manual">Nhập tay</button>
+    </div>
+    <input type="file" id="scan-file" accept="image/*" class="sr">
+  </div>
+
+  <div id="sheet-root"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file" accept="application/json,.json" class="sr" tabindex="-1">
+
+  <script src="vendor/jsQR.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="vietqr.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
