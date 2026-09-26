@@ -1,6 +1,6 @@
 // Lưu sẵn các file của app để mở được cả khi không có mạng.
 // Khi sửa code, tăng số VERSION để máy tải bản mới.
-const VERSION = 'sochi-v1';
+const VERSION = 'sochi-v2';
 const FILES = ['./', './index.html', './style.css', './app.js', './vietqr.js',
   './vendor/jsQR.js', './vendor/qrcode.js', './manifest.webmanifest',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
