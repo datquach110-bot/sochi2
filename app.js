@@ -666,15 +666,25 @@
     // Quét khoảng 5 lần/giây là đủ nhanh, đỡ tốn máy hơn quét mọi khung hình
     if (now - lastScan < 200) return;
     lastScan = now;
+    tryDecodeFrame(true);
+  }
+
+  // Đọc một khung hình hiện tại của camera. live=true: gọi tự động từ vòng quét nền;
+  // live=false: người dùng chủ động bấm "Chụp và đọc mã" (đáng tin cậy hơn trên một số iPhone
+  // chạy app đã Thêm vào Màn hình chính, vì thao tác bấm buộc trình duyệt vẽ lại khung hình mới).
+  function tryDecodeFrame(live) {
     const v = $('#scan-video');
-    if (v.readyState !== v.HAVE_ENOUGH_DATA || !v.videoWidth) return;
+    if (!stream || v.readyState !== v.HAVE_ENOUGH_DATA || !v.videoWidth) {
+      if (!live) toast('Camera chưa sẵn sàng, đợi 1 giây rồi thử lại');
+      return false;
+    }
     const vw = v.videoWidth, vh = v.videoHeight;
 
     // Ưu tiên cắt đúng vùng vuông ở giữa, trùng khung ngắm trên màn hình.
     // Mã QR chiếm hết vùng cắt nên còn nhiều điểm ảnh hơn, đọc được cả mã dày ô.
     const side = Math.min(vw, vh) * 0.85;
     const sx = (vw - side) / 2, sy = (vh - side) / 2;
-    const outSide = Math.min(1000, Math.round(side));
+    const outSide = Math.min(live ? 1000 : 1400, Math.round(side));
     canvas.width = outSide; canvas.height = outSide;
     ctx2d.drawImage(v, sx, sy, side, side, 0, 0, outSide, outSide);
     let img = ctx2d.getImageData(0, 0, outSide, outSide);
@@ -682,14 +692,16 @@
 
     if (!code) {
       // Phòng khi mã nằm lệch ra ngoài khung ngắm: quét thêm cả khung hình đầy đủ
-      const scale = Math.min(1, 900 / Math.max(vw, vh));
+      const scale = Math.min(1, (live ? 900 : 1400) / Math.max(vw, vh));
       const fw = Math.round(vw * scale), fh = Math.round(vh * scale);
       canvas.width = fw; canvas.height = fh;
       ctx2d.drawImage(v, 0, 0, fw, fh);
       img = ctx2d.getImageData(0, 0, fw, fh);
-      code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+      code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
     }
-    if (code && code.data && handleCode(code.data, true)) { cancelAnimationFrame(raf); }
+    if (code && code.data) { lastMiss = 0; return handleCode(code.data, live); }
+    if (!live) { $('#scan-msg').textContent = 'Chưa thấy mã QR trong khung hình. Đưa mã vào giữa khung rồi bấm lại.'; }
+    return false;
   }
 
   function handleCode(text, live) {
@@ -732,6 +744,7 @@
   $('#scan-open').addEventListener('click', openScanner);
   $('#scan-close').addEventListener('click', closeScanner);
   $('#scan-manual').addEventListener('click', () => { closeScanner(); openForm({ mode: 'manual' }); });
+  $('#scan-capture').addEventListener('click', () => tryDecodeFrame(false));
   $('#manual-open').addEventListener('click', () => openForm({ mode: 'manual' }));
 
   // ================= Sao lưu =================
